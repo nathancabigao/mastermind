@@ -8,7 +8,9 @@ PEGS = 6
 # Create and play games of Mastermind
 class Game
   def initialize
-    @turn = 0
+    @turn = 1
+    @code = []
+    @key = []
   end
 
   # Welcome messages for the player
@@ -23,9 +25,66 @@ class Game
     puts "The game ends in victory for the codebreaker if they crack the code in #{MAX_TURNS} turns, otherwise it is a win for the codemaster."
   end
 
-  # Core gameplay loop
+  # Starts the core gameplay loop
   def play
     welcome
+    @code = [1, 1, 1, 1]
+    win = false
+    # write_code(computer_generate_code)
+    until win || @turn > 12
+      guess = player_guess
+      win = (guess == @code)
+      display_guess_message(guess)
+      @turn += 1 unless win
+    end
+    display_end_message(win)
+  end
+
+  # Sets the code for the game
+  def write_code(code)
+    (1..HOLES).each { |hole| @code << code[hole - 1] }
+  end
+
+  # Randomizes a code for the game
+  def computer_set_code
+    code = []
+    (1..HOLES).each { code << random_peg }
+    code
+  end
+
+  # Randomizes a peg
+  def random_peg
+    rand(1..PEGS)
+  end
+
+  # Receives the guess from the codebreaker, returns the guess upon success.
+  def player_guess
+    valid = false
+    until valid
+      guess = []
+      puts "Guess \##{@turn}:"
+      (1..HOLES).each { guess << gets.to_i }
+      valid = valid_guess?(guess)
+      puts "Invalid guess, please try again. Use pegs 1-#{PEGS} only." unless valid
+    end
+    guess
+  end
+
+  # Takes in a code guess as an array, and evaluates if its input is valid (correct size and valid pegs used)
+  def valid_guess?(guess)
+    guess.size == HOLES && guess.all? { |num| num.is_a?(Integer) && num >= 1 && num <= PEGS }
+  end
+
+  def display_guess_message(guess)
+    puts "You guessed: #{guess.inspect}"
+  end
+
+  def display_end_message(win)
+    if win
+      puts "You win! You cracked the code in #{@turn} turns!"
+    else
+      puts "You lose. You did not crack the code within #{MAX_TURNS} turns."
+    end
   end
 end
 
