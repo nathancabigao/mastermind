@@ -1,9 +1,12 @@
 # frozen-string-literal: true
 
-# Constants
+# Constants for the game
 MAX_TURNS = 12
 HOLES = 4
 PEGS = 6
+# Constants for code checking, remainder guesses and remainder code
+CODE = 0
+GUESS = 1
 
 # Create and play games of Mastermind
 class Game
@@ -28,14 +31,14 @@ class Game
   # Starts the core gameplay loop
   def play
     welcome
-    @code = [1, 1, 1, 1]
+    # @code = [1, 1, 1, 1] # TEMP
+    write_code(computer_set_code)
     win = false
-    # write_code(computer_generate_code)
     until win || @turn > 12
       guess = player_guess
-      win = (guess == @code)
+      generate_guess_key(guess)
       display_guess_message(guess)
-      @turn += 1 unless win
+      @turn += 1 unless (win = (guess == @code))
     end
     display_end_message(win)
   end
@@ -52,7 +55,6 @@ class Game
     code
   end
 
-  # Randomizes a peg
   def random_peg
     rand(1..PEGS)
   end
@@ -75,11 +77,53 @@ class Game
     guess.size == HOLES && guess.all? { |num| num.is_a?(Integer) && num >= 1 && num <= PEGS }
   end
 
+  # Given a guess, generates the key indicating how good the guess was.
+  def generate_guess_key(guess)
+    @key = [] # reset key from last turn
+    # New 2D array for remaining code/guesses, remainders[0]->remainders[CODE] and remainders[1]->remainders[GUESS]
+    remainders = check_perfect_guesses(guess)
+    return if remainders[GUESS].size.zero? # guard clause, don't check partial matches if the guess matches the code.
+
+    check_partial_guesses(remainders)
+    add_misses_to_key
+  end
+
+  # Given a guess, updates the key with any PERFECTs and returns a 2D array with remaining guesses/code that are not perfect.
+  def check_perfect_guesses(guess)
+    remainders = [[], []]
+    (1..HOLES).each do |hole|
+      if guess[hole - 1] == @code[hole - 1]
+        @key << 'PERFECT'
+      else
+        remainders[CODE] << @code[hole - 1]
+        remainders[GUESS] << guess[hole - 1]
+      end
+    end
+    remainders
+  end
+
+  # Given the remaining imperfect guesses/code pegs, give hints whenever a guessed peg exists but is imperfect.
+  def check_partial_guesses(remainders)
+    (1..remainders[GUESS].size).each do |rem_guess|
+      if remainders[CODE].include?(remainders[GUESS][rem_guess - 1])
+        @key << 'EXISTS'
+        remainders[CODE] - [remainders[GUESS][rem_guess - 1]]
+      end
+    end
+  end
+
+  # Adds '-' to fill in as "misses" in the key
+  def add_misses_to_key
+    misses = HOLES - @key.size
+    misses.times { @key << '-' }
+  end
+
   def display_guess_message(guess)
-    puts "You guessed: #{guess.inspect}"
+    puts "You guessed: #{guess.inspect}, Key: #{@key}"
   end
 
   def display_end_message(win)
+    puts "The code was #{@code.inspect}!"
     if win
       puts "You win! You cracked the code in #{@turn} turns!"
     else
