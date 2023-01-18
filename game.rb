@@ -71,12 +71,8 @@ class Game
   # Randomizes a code for the game
   def computer_set_code
     code = []
-    (1..HOLES).each { code << random_peg }
+    (1..HOLES).each { code << rand(1..PEGS) }
     code
-  end
-
-  def random_peg
-    rand(1..PEGS)
   end
 
   # Receives the guess from the codebreaker, returns the guess upon success.
