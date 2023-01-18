@@ -126,7 +126,7 @@ class Game
 
       @key << 'EXISTS'
       # Remove an occurrence of that peg, to avoid excess EXISTS
-      remainders[CODE].delete_at(remainders[CODE].find_index(remainders[GUESS][rem_guess - 1]))
+      remainders[CODE].delete_at(remainders[CODE].index(remainders[GUESS][rem_guess - 1]))
     end
   end
 
