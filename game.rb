@@ -61,6 +61,15 @@ class Game
 
   def play_codemaster
     write_code(player_set_code)
+    win = false
+    until win || @turn > 12
+      sleep 0.25
+      guess = computer_guess
+      generate_guess_key(guess)
+      display_guess_message(guess)
+      @turn += 1 unless (win = (guess == @code))
+    end
+    display_end_message(win)
   end
 
   # Sets the code for the game
@@ -86,6 +95,22 @@ class Game
     code = []
     (1..HOLES).each { code << rand(1..PEGS) }
     code
+  end
+
+  # Returns a guess array based on previous feedback, if any.
+  def computer_guess
+    guess = []
+    # init_guess if @turn == 1
+    bg_digit = @turn > PEGS ? 0 : @turn
+    return Array.new(HOLES) { bg_digit } if @turn == 1
+
+    # track PERFECTs to keep that many of that peg in guesses
+    perfects = @key.count('PERFECT')
+    perfects.times { guess << (bg_digit - 1) } unless bg_digit.zero? && @turn > PEGS + 1
+    (HOLES - guess.size).times { guess << bg_digit } unless bg_digit.zero?
+
+    # if EXISTS + PERFECTS == HOLES, start shuffling
+    guess
   end
 
   # Receives the guess from the codebreaker, returns the guess upon success.
