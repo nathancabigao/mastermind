@@ -60,12 +60,25 @@ class Game
   end
 
   def play_codemaster
-    return
+    write_code(player_set_code)
   end
 
   # Sets the code for the game
   def write_code(code)
     (1..HOLES).each { |hole| @code << code[hole - 1] }
+  end
+
+  # Gets a code from the user
+  def player_set_code
+    code = []
+    valid = false
+    until valid
+      puts "\nEnter your code:"
+      (1..HOLES).each { code << gets.to_i }
+      valid = code.all? { |peg| peg.between?(1, PEGS) }
+      puts "Invalid input. Input each number one at a time and use pegs #1-#{PEGS} only." unless valid
+    end
+    code
   end
 
   # Randomizes a code for the game
