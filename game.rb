@@ -19,7 +19,7 @@ class Game
   # Welcome messages for the player
   def welcome
     puts 'Welcome to Mastermind!'
-    puts "In this game, the codemaster sets a code in #{HOLES} holes which can contain #{PEGS} different pegs each (1-#{PEGS})."
+    puts "\nIn this game, the codemaster sets a code in #{HOLES} holes which can contain #{PEGS} different pegs each (1-#{PEGS})."
     puts "The codebreaker will get #{MAX_TURNS} tries to guess the code by guessing 1-#{PEGS} for each one of the #{HOLES} holes."
     puts 'For each turn, the codemaster will return a key, denoting how close their guess was to the actual result:'
     puts '- If a peg was correctly guessed (that hole contained that peg number), a PERFECT will be returned in the key.'
@@ -31,7 +31,23 @@ class Game
   # Starts the core gameplay loop
   def play
     welcome
-    # @code = [1, 1, 1, 1] # TEMP
+    # Decide between codebreaker or codemaster
+    mode_select
+  end
+
+  def mode_select
+    puts "\nChoose a game mode! Enter 1 to be codebreaker, enter 2 to be codemaster."
+    chosen_game_mode = gets.chomp
+    play_codebreaker if chosen_game_mode == '1'
+    play_codemaster if chosen_game_mode == '2'
+    return if %w[1 2].include?(chosen_game_mode)
+
+    puts 'Invalid selection. Try again.'
+    mode_select
+  end
+
+  # Sets up a gameplay loop for playing as codebreaker.
+  def play_codebreaker
     write_code(computer_set_code)
     win = false
     until win || @turn > 12
@@ -41,6 +57,10 @@ class Game
       @turn += 1 unless (win = (guess == @code))
     end
     display_end_message(win)
+  end
+
+  def play_codemaster
+    return
   end
 
   # Sets the code for the game
@@ -64,7 +84,7 @@ class Game
     valid = false
     until valid
       guess = []
-      puts "Guess \##{@turn}:"
+      puts "\nGuess \##{@turn}:"
       (1..HOLES).each { guess << gets.to_i }
       valid = valid_guess?(guess)
       puts "Invalid guess, please try again. Use pegs 1-#{PEGS} only." unless valid
@@ -105,10 +125,12 @@ class Game
   # Given the remaining imperfect guesses/code pegs, give hints whenever a guessed peg exists but is imperfect.
   def check_partial_guesses(remainders)
     (1..remainders[GUESS].size).each do |rem_guess|
-      if remainders[CODE].include?(remainders[GUESS][rem_guess - 1])
-        @key << 'EXISTS'
-        remainders[CODE] - [remainders[GUESS][rem_guess - 1]]
-      end
+      # Guard clause, if that peg is wrong, do nothing. Otherwise, put an EXISTS.
+      next unless remainders[CODE].include?(remainders[GUESS][rem_guess - 1])
+
+      @key << 'EXISTS'
+      # Remove an occurrence of that peg, to avoid excess EXISTS
+      remainders[CODE].delete_at(remainders[CODE].find_index(remainders[GUESS][rem_guess - 1]))
     end
   end
 
@@ -123,7 +145,7 @@ class Game
   end
 
   def display_end_message(win)
-    puts "The code was #{@code.inspect}!"
+    puts "\nThe code was #{@code.inspect}!"
     if win
       puts "You win! You cracked the code in #{@turn} turns!"
     else
