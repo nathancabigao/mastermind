@@ -111,12 +111,15 @@ class Game
 
     # Once the 4 pegs found, we can work on permutations.
     all_wrong = @key.all? { |peg| peg == 'EXISTS' }
-    computer_guess_4_digits(all_wrong, last_guess)
+    computer_guess_perms(all_wrong, last_guess)
   end
 
   def computer_guess_prelim(bg_digit)
     guess = []
+    shift = @key.include?('PERFECT') ? 0 : 1
     keep = (@key.size - @key.count('-')) - @fg_digits.size
+    return computer_guess_prelim_shift(keep, bg_digit) if shift == 1
+
     keep.times { @fg_digits << (bg_digit - 1) }
     guess += @fg_digits
     # keep.times { guess << (bg_digit - 1) } unless bg_digit.zero? && @turn > PEGS + 1
@@ -124,7 +127,16 @@ class Game
     guess
   end
 
-  def computer_guess_4_digits(all_wrong, last_guess)
+  def computer_guess_prelim_shift(keep, bg_digit)
+    guess = []
+    keep.times { @fg_digits.unshift(bg_digit - 1) }
+    guess << bg_digit
+    guess += @fg_digits
+    (HOLES - guess.size).times { guess << bg_digit } unless bg_digit.zero?
+    guess
+  end
+
+  def computer_guess_perms(all_wrong, last_guess)
     if @perms.empty?
       @perms = @fg_digits.permutation(HOLES).to_a
       @perms.delete(last_guess)
