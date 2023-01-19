@@ -14,6 +14,8 @@ class Game
     @turn = 1
     @code = []
     @key = []
+    @fg_digits = []
+    @perms = []
   end
 
   # Welcome messages for the player
@@ -63,8 +65,8 @@ class Game
     write_code(player_set_code)
     win = false
     until win || @turn > 12
-      sleep 0.25
-      guess = computer_guess
+      sleep 0.5
+      guess = computer_guess(guess)
       generate_guess_key(guess)
       display_guess_message(guess)
       @turn += 1 unless (win = (guess == @code))
@@ -98,18 +100,40 @@ class Game
   end
 
   # Returns a guess array based on previous feedback, if any.
-  def computer_guess
-    guess = []
-    # init_guess if @turn == 1
-    bg_digit = @turn > PEGS ? 0 : @turn
+  def computer_guess(last_guess)
+    puts "\nGuess \##{@turn}: "
+    bg_digit = @turn > PEGS + 1 ? 0 : @turn
+    # initial turn 1 guess, 1111
     return Array.new(HOLES) { bg_digit } if @turn == 1
 
-    # track PERFECTs to keep that many of that peg in guesses
-    perfects = @key.count('PERFECT')
-    perfects.times { guess << (bg_digit - 1) } unless bg_digit.zero? && @turn > PEGS + 1
-    (HOLES - guess.size).times { guess << bg_digit } unless bg_digit.zero?
+    # track PERFECT/EXISTS to keep that many of that peg in guesses.
+    return computer_guess_prelim(bg_digit) if @fg_digits.size < 4
 
-    # if EXISTS + PERFECTS == HOLES, start shuffling
+    # Once the 4 pegs found, we can work on permutations.
+    all_wrong = @key.all? { |peg| peg == 'EXISTS' }
+    computer_guess_4_digits(all_wrong, last_guess)
+  end
+
+  def computer_guess_prelim(bg_digit)
+    guess = []
+    keep = (@key.size - @key.count('-')) - @fg_digits.size
+    keep.times { @fg_digits << (bg_digit - 1) }
+    guess += @fg_digits
+    # keep.times { guess << (bg_digit - 1) } unless bg_digit.zero? && @turn > PEGS + 1
+    (HOLES - guess.size).times { guess << bg_digit } unless bg_digit.zero?
+    guess
+  end
+
+  def computer_guess_4_digits(all_wrong, last_guess)
+    if @perms.empty?
+      @perms = @fg_digits.permutation(HOLES).to_a
+      @perms.delete(last_guess)
+    end
+    # If last guess had all EXISTS, we can delete permutations with those pegs in those holes.
+    all_wrong && (1..HOLES).each { |x| @perms.delete_if { |perm| perm[x - 1] == last_guess[x - 1] } }
+    # Choose a random permutation. Delete it from the list before returning.
+    guess = @perms.sample
+    @perms.delete(guess)
     guess
   end
 
